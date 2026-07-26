@@ -1,4 +1,4 @@
-// scraper.js — Final stabilized version (Cainiao + Google Sheets)
+// scraper.js — Final stabilized version (Cainiao + Google Sheets) — SAYT 2
 const fetch = require('node-fetch');
 const puppeteer = require('puppeteer');
 const UA = require('random-useragent');
@@ -7,9 +7,9 @@ const path = require('path');
 
 // Google Apps Script bağlantısı (Secrets → env). Lokal test üçün fallback var.
 const WEBAPP_URL = process.env.SHEET_WEBAPP_URL
-  || 'https://script.google.com/macros/s/AKfycbxxL1BUluNan_gXD-UFW0S6l9UxaQsQYsipBJjcQOGFpi0236sUX01w-R2egwDXkDKvcQ/exec';
+  || 'https://script.google.com/macros/s/AKfycbzJbpAGPdQaTsers-7AP0G4i5z6ydbZb7s9Rdn5thsG7E2EOoWZ_D8Dn0ojGeVyw1aR/exec';
 const SECRET = process.env.SHEET_SECRET
-  || 'bmwmpart_2AGENT_SYS_2025_secret_9bX4h2Qz';
+  || 'site2_agent_8CHmbQ62YnNWe0axAGIUIpyp';
 
 // Cainiao səhifəsi və selektorlar
 const PAGE_URL   = 'https://page.cainiao.com/guoguo/app-myexpress-taobao/search-express.html';
@@ -249,11 +249,10 @@ async function main() {
   for (const tr of list) {
     console.log('Yoxlanır:', tr);
 
-    // Hər izləmə kodu üçün yoxlama başlasın və paralel status yaza bilsin
     const checkPromise = scrapeWithRetry(browser, tr)
       .then(async (res) => {
         console.log(' →', tr, '⇒', res.statusAZ);
-        await postResult(tr, res.statusAZ);   // DƏRHAL YAZ
+        await postResult(tr, res.statusAZ);
         return res;
       })
       .catch(async (err) => {
@@ -262,7 +261,6 @@ async function main() {
         return { statusAZ: 'problem' };
       });
 
-    // Növbəvi icra (paralel açmayaraq sistemə yüngül yanaşırıq)
     await checkPromise;
   }
 
