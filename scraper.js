@@ -224,6 +224,15 @@ async function scrapeOnce(browser, tracking) {
   }
 }
 
+/** Vaxt limiti ilə söz verir (biri ilişsə, məcburi kəsilir) */
+function withTimeout(promise, ms, label) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error('hard timeout: ' + label)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
 /** Retry mexanizmi */
 async function scrapeWithRetry(browser, tracking) {
   try { return await scrapeOnce(browser, tracking); }
@@ -249,19 +258,22 @@ async function main() {
   for (const tr of list) {
     console.log('Yoxlanır:', tr);
 
-    const checkPromise = scrapeWithRetry(browser, tr)
+    // Hər tracking üçün ciddi vaxt limiti (90 san) — biri ilişsə, məcburi keçsin
+    const HARD_MS = 90000;
+    const checkPromise = withTimeout(scrapeWithRetry(browser, tr), HARD_MS, tr)
       .then(async (res) => {
         console.log(' →', tr, '⇒', res.statusAZ);
         await postResult(tr, res.statusAZ);
         return res;
       })
       .catch(async (err) => {
-        console.error(`❌ ${tr} üçün səhv: ${err.message}`);
+        console.error(`❌ ${tr} üçün səhv (keçilir): ${err.message}`);
         await postResult(tr, 'problem');
         return { statusAZ: 'problem' };
       });
 
-    await checkPromise;
+    // await catch ilə qorunub — heç vaxt bütöv dövrü dayandırmır
+    await checkPromise.catch(() => {});
   }
 
   await browser.close();
